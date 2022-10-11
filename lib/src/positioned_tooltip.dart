@@ -481,21 +481,25 @@ class RenderPositionedTooltip extends RenderShiftedBox
         if (!_filled) {
           final linepaint = Paint()
             ..color = lineColor ?? Colors.white
-            ..style = PaintingStyle.stroke;
+            ..style = PaintingStyle.stroke
+            ..strokeWidth = 1;
+
           context.canvas.drawPath(path, linepaint);
 
           final offset = _getTailOffset(rect: rect, radius: radius);
 
+          final directionUp = offset[1].dx.compareTo(offset[2].dx) == 1;
+
           final collapseLine = Path()
-            ..moveTo(offset[1].dx, offset[1].dy)
-            ..lineTo(offset[2].dx, offset[2].dy)
+            ..moveTo(offset[1].dx - (directionUp ? 1 : -1), offset[1].dy)
+            ..lineTo(offset[2].dx + (directionUp ? 1 : -1), offset[2].dy)
             ..close();
 
           context.canvas.drawPath(
             collapseLine,
             linepaint
               ..color = paint.color
-              ..strokeWidth = 1,
+              ..strokeWidth = 1.3,
           );
         }
       }

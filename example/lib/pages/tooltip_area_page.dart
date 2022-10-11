@@ -50,7 +50,7 @@ class _TooltipAreaExamplePageState extends State<TooltipAreaExamplePage> {
                         margin: const EdgeInsets.all(16.0),
                         filled: false,
                         lineColor: Colors.red,
-                        backgroundColor: Colors.white,
+                        backgroundColor: Colors.purple,
                         borderRadius: const BorderRadius.all(
                           Radius.circular(16.0),
                         ),
