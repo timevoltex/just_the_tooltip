@@ -32,6 +32,8 @@ class PositionedTooltip extends SingleChildRenderObjectWidget {
     required this.shadow,
     required this.elevation,
     required this.scrollPosition,
+    this.filled = true,
+    this.lineColor,
   }) : super(key: key, child: child);
 
   final EdgeInsetsGeometry margin;
@@ -66,6 +68,10 @@ class PositionedTooltip extends SingleChildRenderObjectWidget {
 
   final ScrollPosition? scrollPosition;
 
+  final bool filled;
+
+  final Color? lineColor;
+
   @override
   RenderObject createRenderObject(BuildContext context) {
     return RenderPositionedTooltip(
@@ -83,6 +89,8 @@ class PositionedTooltip extends SingleChildRenderObjectWidget {
       shadow: shadow,
       elevation: elevation,
       scrollPosition: scrollPosition,
+      filled: filled,
+      lineColor: lineColor,
     );
   }
 
@@ -166,6 +174,8 @@ class RenderPositionedTooltip extends RenderShiftedBox
     required Shadow shadow,
     required double elevation,
     required ScrollPosition? scrollPosition,
+    required bool filled,
+    required Color? lineColor,
   })  : _margin = margin,
         _offset = offset,
         _target = target,
@@ -180,6 +190,8 @@ class RenderPositionedTooltip extends RenderShiftedBox
         _shadow = shadow,
         _elevation = elevation,
         _scrollPosition = scrollPosition,
+        _filled = filled,
+        _lineColor = lineColor,
         super(child);
 
   late AxisDirection axisDirection;
@@ -296,6 +308,22 @@ class RenderPositionedTooltip extends RenderShiftedBox
     markNeedsLayout();
   }
 
+  bool get filled => _filled;
+  bool _filled;
+  set filled(bool value) {
+    if (_filled == value) return;
+    _filled = value;
+    markNeedsLayout();
+  }
+
+  Color? get lineColor => _lineColor;
+  Color? _lineColor;
+  set lineColor(Color? value) {
+    if (_lineColor == value) return;
+    _lineColor = value;
+    markNeedsLayout();
+  }
+
   double get offsetAndTailLength => offset + tailLength;
 
   @override
@@ -408,9 +436,11 @@ class RenderPositionedTooltip extends RenderShiftedBox
     if (maybeChild != null) {
       final childParentData = maybeChild.parentData! as BoxParentData;
       final parentDataOffset = childParentData.offset;
+
       final paint = Paint()
         ..color = backgroundColor
         ..style = PaintingStyle.fill;
+
       final path = Path();
       final radius = borderRadius.resolve(textDirection);
       final rect = (offset + parentDataOffset) & maybeChild.size;
@@ -419,6 +449,10 @@ class RenderPositionedTooltip extends RenderShiftedBox
       // Currently, I don't think this is triggered by an empty child. Dunno
       // why this is the case or if this is a feature.
       if (!rect.isEmpty) {
+        final tail = _paintTail(
+          rect: rect,
+          radius: radius,
+        );
         path
           ..addRRect(
             RRect.fromRectAndCorners(
@@ -430,10 +464,7 @@ class RenderPositionedTooltip extends RenderShiftedBox
             ),
           )
           ..addPath(
-            _paintTail(
-              rect: rect,
-              radius: radius,
-            ),
+            tail,
             Offset.zero,
           );
 
@@ -444,7 +475,29 @@ class RenderPositionedTooltip extends RenderShiftedBox
           elevation,
           false,
         );
+
         context.canvas.drawPath(path, paint);
+
+        if (!_filled) {
+          final linepaint = Paint()
+            ..color = lineColor ?? Colors.white
+            ..style = PaintingStyle.stroke;
+          context.canvas.drawPath(path, linepaint);
+
+          final offset = _getTailOffset(rect: rect, radius: radius);
+
+          final collapseLine = Path()
+            ..moveTo(offset[1].dx, offset[1].dy)
+            ..lineTo(offset[2].dx, offset[2].dy)
+            ..close();
+
+          context.canvas.drawPath(
+            collapseLine,
+            linepaint
+              ..color = paint.color
+              ..strokeWidth = 1,
+          );
+        }
       }
     }
 
@@ -656,6 +709,134 @@ class RenderPositionedTooltip extends RenderShiftedBox
     }
 
     return tailBuilder(Offset(x, y), Offset(x2, y2), Offset(x3, y3));
+  }
+
+  List<Offset> _getTailOffset({
+    required Rect rect,
+    required BorderRadius radius,
+  }) {
+    // Clockwise around the triangle starting at the target center
+    // point + offset
+    double x = 0, y = 0, x2 = 0, y2 = 0, x3 = 0, y3 = 0;
+    final targetWidthRadius = targetSize.width / 2;
+    final targetHeightRadius = targetSize.height / 2;
+
+    switch (axisDirection) {
+      case AxisDirection.up:
+        final baseLength = math.min(
+          tailBaseWidth,
+          (rect.right - rect.left) -
+              (radius.bottomLeft.x + radius.bottomRight.x),
+        );
+        final halfBaseLength = baseLength / 2;
+        final insetLeftCorner = rect.left + radius.bottomLeft.x;
+        final insetRightCorner = rect.right - radius.bottomRight.x;
+
+        if (insetLeftCorner > insetRightCorner) {
+          // This happens when the content is so small, accounting for the
+          // border radius messes up our measurements. Might as well not draw
+          // a tail at this point
+          break;
+        }
+
+        final offsetTarget = target.translate(0, -offset - targetHeightRadius);
+
+        // assert(rect.bottom == _target.dy - tailLength);
+
+        x = offsetTarget.dx;
+        y = offsetTarget.dy;
+
+        x2 = (math.min(offsetTarget.dx, insetRightCorner) - halfBaseLength)
+            .clamp(insetLeftCorner, insetRightCorner);
+        y2 = rect.bottom;
+
+        x3 = (math.max(offsetTarget.dx, insetLeftCorner) + halfBaseLength)
+            .clamp(insetLeftCorner, insetRightCorner);
+        y3 = rect.bottom;
+        break;
+      case AxisDirection.down:
+        final baseLength = math.min(
+          tailBaseWidth,
+          (rect.right - rect.left) - (radius.topLeft.x + radius.topRight.x),
+        );
+        final halfBaseLength = baseLength / 2;
+        final insetLeftCorner = rect.left + radius.topLeft.x;
+        final insetRightCorner = rect.right - radius.topRight.x;
+
+        if (insetLeftCorner > insetRightCorner) break;
+
+        final offsetTarget = target.translate(0, offset + targetHeightRadius);
+
+        assert(rect.top == offsetTarget.dy + tailLength);
+
+        x = offsetTarget.dx;
+        y = offsetTarget.dy;
+
+        x2 = (math.max(offsetTarget.dx, insetLeftCorner) + halfBaseLength)
+            .clamp(insetLeftCorner, insetRightCorner);
+        y2 = rect.top;
+
+        x3 = (math.min(offsetTarget.dx, insetRightCorner) - halfBaseLength)
+            .clamp(insetLeftCorner, insetRightCorner);
+        y3 = rect.top;
+        break;
+      case AxisDirection.left:
+        final baseLength = math.min(
+          tailBaseWidth,
+          (rect.bottom - rect.top) - (radius.topRight.y + radius.bottomRight.y),
+        );
+        final halfBaseLength = baseLength / 2;
+        final insetTopCorner = rect.top + radius.topRight.y;
+        final insetBottomCorner = rect.bottom - radius.bottomRight.y;
+
+        if (insetBottomCorner < insetTopCorner) break;
+
+        final offsetTarget = target.translate(-offset - targetWidthRadius, 0.0);
+
+        assert(rect.right == offsetTarget.dx - tailLength);
+
+        x = offsetTarget.dx;
+        y = offsetTarget.dy;
+
+        x2 = rect.right;
+        y2 = (math.max(offsetTarget.dy, insetTopCorner) + halfBaseLength)
+            .clamp(insetTopCorner, insetBottomCorner);
+
+        x3 = rect.right;
+        y3 = (math.min(offsetTarget.dy, insetBottomCorner) - halfBaseLength)
+            .clamp(insetTopCorner, insetBottomCorner);
+
+        break;
+      case AxisDirection.right:
+        final baseLength = math.min(
+          tailBaseWidth,
+          (rect.bottom - rect.top) - (radius.topLeft.y + radius.topRight.y),
+        );
+
+        final halfBaseLength = baseLength / 2;
+        final insetBottomCorner = rect.bottom - radius.bottomLeft.y;
+        final insetTopCorner = rect.top + radius.topLeft.y;
+
+        if (insetBottomCorner < insetTopCorner) break;
+
+        final offsetTarget = target.translate(offset + targetWidthRadius, 0.0);
+
+        assert(rect.left == offsetTarget.dx + tailLength);
+
+        x = offsetTarget.dx;
+        y = offsetTarget.dy;
+
+        x2 = rect.left;
+        y2 = (math.min(offsetTarget.dy, insetBottomCorner) - halfBaseLength)
+            .clamp(insetTopCorner, insetBottomCorner);
+
+        x3 = rect.left;
+        y3 = (math.max(offsetTarget.dy, insetTopCorner) + halfBaseLength)
+            .clamp(insetTopCorner, insetBottomCorner);
+        break;
+    }
+
+    return [Offset(x, y), Offset(x2, y2), Offset(x3, y3)];
   }
 
   @override

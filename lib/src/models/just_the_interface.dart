@@ -226,4 +226,8 @@ abstract class JustTheInterface extends StatefulWidget {
   /// example, if the tooltip happens to go beyond its quadrant but there is
   /// scroll space beneath it the bounds will accomadate it.
   ScrollController? get scrollController;
+
+  bool get filled;
+
+  Color? get lineColor;
 }

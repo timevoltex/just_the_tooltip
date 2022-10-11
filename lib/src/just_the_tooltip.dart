@@ -56,6 +56,8 @@ class JustTheTooltip extends StatefulWidget implements JustTheInterface {
     this.shadow,
     this.showWhenUnlinked = false,
     this.scrollController,
+    this.filled = true,
+    this.lineColor,
   }) : super(key: key);
 
   @override
@@ -148,6 +150,12 @@ class JustTheTooltip extends StatefulWidget implements JustTheInterface {
 
   @override
   final ScrollController? scrollController;
+
+  @override
+  final bool filled;
+
+  @override
+  final Color? lineColor;
 
   @override
   JustTheTooltipState<OverlayEntry> createState() =>
@@ -705,6 +713,8 @@ abstract class JustTheTooltipState<T> extends State<JustTheInterface>
                       shadow: widget.shadow ?? defaultShadow,
                       elevation: widget.elevation,
                       scrollPosition: scrollController.position,
+                      filled: widget.filled,
+                      lineColor: widget.lineColor,
                       child: child!,
                     );
                   },
@@ -730,6 +740,8 @@ abstract class JustTheTooltipState<T> extends State<JustTheInterface>
                 shadow: widget.shadow ?? defaultShadow,
                 elevation: widget.elevation,
                 scrollPosition: null,
+                filled: widget.filled,
+                lineColor: widget.lineColor,
                 child: wrappedChild,
               );
             },

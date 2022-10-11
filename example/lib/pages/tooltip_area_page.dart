@@ -48,6 +48,9 @@ class _TooltipAreaExamplePageState extends State<TooltipAreaExamplePage> {
                         tailLength: 20.0,
                         preferredDirection: AxisDirection.down,
                         margin: const EdgeInsets.all(16.0),
+                        filled: false,
+                        lineColor: Colors.red,
+                        backgroundColor: Colors.white,
                         borderRadius: const BorderRadius.all(
                           Radius.circular(16.0),
                         ),

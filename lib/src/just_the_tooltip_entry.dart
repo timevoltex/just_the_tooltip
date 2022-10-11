@@ -39,6 +39,8 @@ class JustTheTooltipEntry extends StatefulWidget implements JustTheInterface {
     this.shadow,
     this.showWhenUnlinked = false,
     this.scrollController,
+    this.filled = true,
+    this.lineColor,
   });
 
   @override
@@ -133,6 +135,12 @@ class JustTheTooltipEntry extends StatefulWidget implements JustTheInterface {
 
   @override
   JustTheTooltipState<Widget> createState() => _JustTheTooltipEntryState();
+
+  @override
+  final bool filled;
+
+  @override
+  final Color? lineColor;
 }
 
 // TODO: I think I want notifications instead... I'm really not sure
