@@ -76,7 +76,7 @@ class _TooltipAreaExamplePageState extends State<TooltipAreaExamplePage> {
                                 keyboardType: TextInputType.text,
                                 textCapitalization:
                                     TextCapitalization.sentences,
-                                style: Theme.of(context).textTheme.headline6,
+                                style: Theme.of(context).textTheme.titleLarge,
                                 controller: titleController,
                               ),
                               const SizedBox(height: 12.0),
@@ -86,7 +86,7 @@ class _TooltipAreaExamplePageState extends State<TooltipAreaExamplePage> {
                                 keyboardType: TextInputType.multiline,
                                 textCapitalization:
                                     TextCapitalization.sentences,
-                                style: Theme.of(context).textTheme.subtitle1,
+                                style: Theme.of(context).textTheme.titleMedium,
                               ),
                               const SizedBox(height: 16.0),
                               Row(
